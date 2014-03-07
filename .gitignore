@@ -1,0 +1,14 @@
+# compiling stuff
+*.o
+*.a
+
+# executables
+example
+1DArray_example
+
+# vim stuff
+.*.swp
+.*.un~
+
+# GAlib stuff
+evolution.txt

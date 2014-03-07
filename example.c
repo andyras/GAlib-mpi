@@ -84,6 +84,8 @@ float objective(GAGenome &c)
 	GABin2DecGenome &genome = (GABin2DecGenome &)c;
 	float x, y, error;
 
+	//sleep(1);
+
 	x = genome.phenotype(0);
 	y = genome.phenotype(1);
 
