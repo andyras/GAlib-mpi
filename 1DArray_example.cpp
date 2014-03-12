@@ -4,9 +4,11 @@
 #include <ga-mpi/ga.h>
 #include <ga-mpi/std_stream.h>
 #include "mpi.h"
+#include <sys/wait.h>
 
-// This is the declaration of the objective function which is defined later.
+// This are the declaration of the objective functions which are defined later.
 float objective(GAGenome &);
+float dynamixObjective(GAGenome &);
 
 // declare Initializer also
 void Initializer(GAGenome &);
@@ -29,8 +31,8 @@ int main(int argc, char **argv)
       seed = atoi(argv[i]);
 
   // Declare variables for the GA parameters and set them to some default values.
-  int popsize  = 1000; // Population
-  int ngen     = 1000; // Generations
+  int popsize  = 10; // Population
+  int ngen     = 10; // Generations
   float pmut   = 0.03;
   float pcross = 0.65;
 
@@ -47,7 +49,8 @@ int main(int argc, char **argv)
 
   // Create the template genome using the phenotype map we just made.
   ///GABin2DecGenome genome(map, objective);
-  GA1DArrayGenome<double> genome(2, objective);
+  //GA1DArrayGenome<double> genome(2, objective);
+  GA1DArrayGenome<double> genome(2, dynamixObjective);
   // define own initializer, can do the same for mutator and comparator
   genome.initializer(::Initializer);
 
@@ -102,16 +105,57 @@ float objective(GAGenome &c)
   return error;
 }
 
-double dynamixObjective(GAGenome &c) {
+float dynamixObjective(GAGenome &c) {
   GA1DArrayGenome<double> &genome = (GA1DArrayGenome<double> &)c;
   // variables and output
   double g1;
   double g2;
   double g1_c;
-  double output;
+  float output = 1.0;
+
+  pid_t pid;
+  int status;
+  char ** args;
+  std::string arg = "/extra/scratch/foo";
 
   // ---- set up job directory ---- //
-  //
+  args = new char * [4];
+  args[0] = new char [6];
+  strncpy(args[0], "mkdir", 6);
+  args[1] = new char [3];
+  strncpy(args[1], "-p", 3);
+  args[2] = new char [arg.length()+1];
+  strncpy(args[2], arg.c_str(), arg.length()+1);
+  args[3] = NULL;
+
+  fprintf(stdout, "COMMAND:");
+  for (int ii = 0; ii < 4; ii++) {
+    fprintf(stdout, " %s", args[ii]);
+  }
+  fprintf(stdout, "\n");
+
+  // fork fails
+  if ((pid = fork()) < 0) {
+    fprintf(stdout, "Fork bork\n");
+    _exit(EXIT_FAILURE);
+  }
+  // child process
+  else if (pid == 0) {
+    // make directory
+    execv("/bin/mkdir", args);
+    // just in case
+    _exit(EXIT_FAILURE);
+  }
+  // parent process
+  else {
+    waitpid(pid, &status, 0);
+  }
+  // clean up
+  for (int ii = 0; ii < 4; ii++) {
+    delete [] args[ii];
+  }
+  delete [] args;
+
   // ---- run code ---- //
   //
   // ---- check for success ---- //
@@ -123,6 +167,7 @@ double dynamixObjective(GAGenome &c) {
   // ---- remove job directory ---- //
 
   return output;
+}
 
 void Initializer(GAGenome &g) {
   GA1DArrayGenome<double> &genome = (GA1DArrayGenome<double> &)g;
