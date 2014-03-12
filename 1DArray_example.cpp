@@ -102,6 +102,28 @@ float objective(GAGenome &c)
   return error;
 }
 
+double dynamixObjective(GAGenome &c) {
+  GA1DArrayGenome<double> &genome = (GA1DArrayGenome<double> &)c;
+  // variables and output
+  double g1;
+  double g2;
+  double g1_c;
+  double output;
+
+  // ---- set up job directory ---- //
+  //
+  // ---- run code ---- //
+  //
+  // ---- check for success ---- //
+  //
+  // ---- read in outputs ---- //
+  //
+  // ---- calculate objective ---- //
+  //
+  // ---- remove job directory ---- //
+
+  return output;
+
 void Initializer(GAGenome &g) {
   GA1DArrayGenome<double> &genome = (GA1DArrayGenome<double> &)g;
 
