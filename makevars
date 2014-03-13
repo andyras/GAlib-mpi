@@ -4,6 +4,6 @@ MKDEPEND    = makedepend
 RM          = rm -rf
 
 CXX         = mpic++
-CXXFLAGS    = -g -Wall
+CXXFLAGS    = -g -Wall -std=c++11
 LD          = mpic++ -w
 AR          = ar rv

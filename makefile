@@ -10,7 +10,7 @@ example: example.c
 	$(CXX) example.o -o example -L./ga-mpi -lga-mpi
 
 1D: 1DArray_example.cpp
-	$(CXX) -g -Wall -I . -c 1DArray_example.cpp -o 1DArray_example.o
+	$(CXX) $(CXXFLAGS) -g -Wall -I . -c 1DArray_example.cpp -o 1DArray_example.o
 	$(CXX) 1DArray_example.o -o 1DArray_example -L./ga-mpi -lga-mpi
 
 .PHONY: clean

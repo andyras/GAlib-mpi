@@ -5,6 +5,7 @@
 #include <ga-mpi/std_stream.h>
 #include "mpi.h"
 #include <sys/wait.h>
+#include <string>
 
 // This are the declaration of the objective functions which are defined later.
 float objective(GAGenome &);
@@ -31,8 +32,8 @@ int main(int argc, char **argv)
       seed = atoi(argv[i]);
 
   // Declare variables for the GA parameters and set them to some default values.
-  int popsize  = 10; // Population
-  int ngen     = 10; // Generations
+  int popsize  = 2; // Population
+  int ngen     = 2; // Generations
   float pmut   = 0.03;
   float pcross = 0.65;
 
@@ -107,10 +108,15 @@ float objective(GAGenome &c)
 
 float dynamixObjective(GAGenome &c) {
   GA1DArrayGenome<double> &genome = (GA1DArrayGenome<double> &)c;
+  // get MPI rank and size
+  int rank, size;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &size);
+
   // variables and output
-  double g1;
-  double g2;
-  double g1_c;
+  double g1 = genome.gene(0);
+  double g2 = genome.gene(1);
+  double g1_c = genome.gene(2);
   float output = 1.0;
 
   pid_t pid;
@@ -118,7 +124,22 @@ float dynamixObjective(GAGenome &c) {
   char ** args;
   std::string arg = "/extra/scratch/foo";
 
+  // names for original directory and job directory
+  // TODO pass as cmd line params
+  pid = getpid();
+  std::string tmpDir ("/extra/scratch/dynamix");
+  // job directory name
+  char jobFmt [] = "%s%.12e_%.12e_%.12e_%d_%d";
+  char jobDir [1000];
+  sprintf(jobDir, jobFmt, tmpDir.c_str(), g1, g2, g1_c, rank, size);
+  std::cout << jobDir << std::endl;
+  std::string dynDir ("/home/andyras/git/dynamix/dm/");
+  std::string dynInsDir (dynDir + "ins/");
+
   // ---- set up job directory ---- //
+ 
+  // -- create job directory -- //
+
   args = new char * [4];
   args[0] = new char [6];
   strncpy(args[0], "mkdir", 6);
@@ -134,20 +155,17 @@ float dynamixObjective(GAGenome &c) {
   }
   fprintf(stdout, "\n");
 
-  // fork fails
-  if ((pid = fork()) < 0) {
+  if ((pid = fork()) < 0) { // fork fails
     fprintf(stdout, "Fork bork\n");
     _exit(EXIT_FAILURE);
   }
-  // child process
-  else if (pid == 0) {
+  else if (pid == 0) { // child process
     // make directory
     execv("/bin/mkdir", args);
     // just in case
     _exit(EXIT_FAILURE);
   }
-  // parent process
-  else {
+  else { // parent process
     waitpid(pid, &status, 0);
   }
   // clean up
@@ -155,6 +173,45 @@ float dynamixObjective(GAGenome &c) {
     delete [] args[ii];
   }
   delete [] args;
+
+  // -- copy inputs to job dir -- //
+
+  args = new char * [5];
+  args[0] = new char [strlen("cp") + 1];
+  strncpy(args[0], "cp", strlen("cp") + 1);
+  args[1] = new char [strlen("-r") + 1];
+  strncpy(args[1], "-r", strlen("-r") + 1);
+  args[2] = new char [dynInsDir.length() + 1];
+  strncpy(args[2], dynInsDir.c_str(), dynInsDir.length() + 1);
+  args[3] = new char [strlen(jobDir) + 1];
+  strncpy(args[3], jobDir, strlen(jobDir) + 1);
+  args[4] = NULL;
+
+  fprintf(stdout, "COMMAND:");
+  for (int ii = 0; ii < 5; ii++) {
+    fprintf(stdout, " %s", args[ii]);
+  }
+  fprintf(stdout, "\n");
+
+  if ((pid = fork()) < 0) { // fork fails
+    fprintf(stdout, "Fork bork\n");
+    _exit(EXIT_FAILURE);
+  }
+  else if (pid == 0) { // child
+    execv("/bin/cp", args);
+    _exit(EXIT_FAILURE);
+  }
+  else { // parent
+    waitpid(pid, &status, 0);
+  }
+
+  // clean up
+  for (int ii = 0; ii < 5; ii++) {
+    delete [] args[ii];
+  }
+  delete [] args;
+
+  // change parameters in input file
 
   // ---- run code ---- //
   //
