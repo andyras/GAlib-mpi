@@ -135,9 +135,18 @@ float dynamixObjective(GAGenome &c) {
   std::cout << jobDir << std::endl;
   std::string dynDir ("/home/andyras/git/dynamix/dm/");
   std::string dynInsDir (dynDir + "ins/");
+  std::string dynamix (dynDir + "bin/dynamix");
+  std::string changeParam (dynDir + "tools/changeParam.py");
+  char sciFmt [] = "%.12e";
+  char g1Str [100];
+  char g2Str [100];
+  char g1_cStr [100];
+  sprintf(g1Str, sciFmt, g1);
+  sprintf(g2Str, sciFmt, g2);
+  sprintf(g1_cStr, sciFmt, g1_c);
 
   // ---- set up job directory ---- //
- 
+
   // -- create job directory -- //
 
   args = new char * [4];
@@ -175,6 +184,12 @@ float dynamixObjective(GAGenome &c) {
   delete [] args;
 
   // -- copy inputs to job dir -- //
+  /*
+  std::string dynInsDirNoSlash = dynInsDir;
+  while(dynInsDirNoSlash.rbegin() != dynInsDirNoSlash.rend() && *dynInsDirNoSlash.rbegin() == '/') {
+    dynInsDirNoSlash.pop_back();
+  }
+  */
 
   args = new char * [5];
   args[0] = new char [strlen("cp") + 1];
@@ -212,6 +227,13 @@ float dynamixObjective(GAGenome &c) {
   delete [] args;
 
   // change parameters in input file
+  args = new char * [6];
+  args[0] = new char [changeParam.length() + 1];
+  args[1] = new char [strlen("changeParam.py") + 1];
+  args[2] = new char [strlen("-f") + 1];
+  args[3] = new char [strlen("") + 1];
+  args[4] = new char [strlen("gamma1") + 1];
+  args[5] = new char [strlen("-f") + 1];
 
   // ---- run code ---- //
   //
