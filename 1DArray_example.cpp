@@ -121,7 +121,13 @@ float dynamixObjective(GAGenome &c) {
 
   pid_t pid;
   int status;
-  char ** args;
+
+  // array of strings for commands + arguments
+  char * args [10];
+  for (int ii = 0; ii < 10; ii++) {
+    args[ii] = new char [1000];
+  }
+
   std::string arg = "/extra/scratch/foo";
 
   // names for original directory and job directory
@@ -145,17 +151,17 @@ float dynamixObjective(GAGenome &c) {
   sprintf(g2Str, sciFmt, g2);
   sprintf(g1_cStr, sciFmt, g1_c);
 
+  std::string jobInsDir (jobDir + std::string("/ins/"));
+  std::string jobOutsDir (jobDir + std::string("/outs/"));
+
   // ---- set up job directory ---- //
 
   // -- create job directory -- //
+  // making the output directory so that the top directory gets made too
 
-  args = new char * [4];
-  args[0] = new char [6];
   strncpy(args[0], "mkdir", 6);
-  args[1] = new char [3];
   strncpy(args[1], "-p", 3);
-  args[2] = new char [arg.length()+1];
-  strncpy(args[2], arg.c_str(), arg.length()+1);
+  strncpy(args[2], jobOutsDir.c_str(), jobOutsDir.length()+1);
   args[3] = NULL;
 
   fprintf(stdout, "COMMAND:");
@@ -177,35 +183,30 @@ float dynamixObjective(GAGenome &c) {
   else { // parent process
     waitpid(pid, &status, 0);
   }
-  // clean up
-  for (int ii = 0; ii < 4; ii++) {
-    delete [] args[ii];
-  }
-  delete [] args;
 
   // -- copy inputs to job dir -- //
-  /*
   std::string dynInsDirNoSlash = dynInsDir;
-  while(dynInsDirNoSlash.rbegin() != dynInsDirNoSlash.rend() && *dynInsDirNoSlash.rbegin() == '/') {
-    dynInsDirNoSlash.pop_back();
-  }
-  */
 
-  args = new char * [5];
-  args[0] = new char [strlen("cp") + 1];
+  while (dynInsDirNoSlash.at(dynInsDirNoSlash.size()-1) == '/') {
+    std::cerr << "About to erase slash from " << dynInsDirNoSlash << std::endl;
+    dynInsDirNoSlash.erase(dynInsDirNoSlash.end()-1);
+    std::cerr << "Erased slash from " << dynInsDirNoSlash << std::endl;
+  }
+
+  // construct arguments
+  for (int ii = 0; ii < 10; ii++) {
+    delete [] args[ii];
+    args[ii] = new char [1000];
+  }
   strncpy(args[0], "cp", strlen("cp") + 1);
-  args[1] = new char [strlen("-r") + 1];
   strncpy(args[1], "-r", strlen("-r") + 1);
-  args[2] = new char [dynInsDir.length() + 1];
-  strncpy(args[2], dynInsDir.c_str(), dynInsDir.length() + 1);
-  args[3] = new char [strlen(jobDir) + 1];
+  strncpy(args[2], dynInsDirNoSlash.c_str(), dynInsDirNoSlash.length() + 1);
   strncpy(args[3], jobDir, strlen(jobDir) + 1);
   args[4] = NULL;
 
+
   fprintf(stdout, "COMMAND:");
-  for (int ii = 0; ii < 5; ii++) {
-    fprintf(stdout, " %s", args[ii]);
-  }
+  for (int ii = 0; ii < 10; ii++) fprintf(stdout, " %s", args[ii]);
   fprintf(stdout, "\n");
 
   if ((pid = fork()) < 0) { // fork fails
@@ -220,23 +221,121 @@ float dynamixObjective(GAGenome &c) {
     waitpid(pid, &status, 0);
   }
 
-  // clean up
-  for (int ii = 0; ii < 5; ii++) {
-    delete [] args[ii];
-  }
-  delete [] args;
 
-  // change parameters in input file
-  args = new char * [6];
-  args[0] = new char [changeParam.length() + 1];
-  args[1] = new char [strlen("changeParam.py") + 1];
-  args[2] = new char [strlen("-f") + 1];
-  args[3] = new char [strlen("") + 1];
-  args[4] = new char [strlen("gamma1") + 1];
-  args[5] = new char [strlen("-f") + 1];
+
+  std::string jobDirParamFile (jobDir + std::string("/ins/parameters.in"));
+  // construct arguments
+  for (int ii = 0; ii < 10; ii++) {
+    delete [] args[ii];
+    args[ii] = new char [1000];
+  }
+  // change parameter
+  strncpy(args[0], changeParam.c_str(), changeParam.length() + 1);
+  strncpy(args[1], "-f", strlen("-f") + 1);
+  strncpy(args[2], jobDirParamFile.c_str(), jobDirParamFile.length() + 1);
+  strncpy(args[3], "gamma1", strlen(jobDir) + 1);
+  strncpy(args[4], g1Str, strlen(g1Str) + 1);
+  args[5] = NULL;
+
+  fprintf(stdout, "COMMAND:");
+  for (int ii = 0; ii < 10; ii++) fprintf(stdout, " %s", args[ii]);
+  fprintf(stdout, "\n");
+
+  if ((pid = fork()) < 0) { // fork fails
+    fprintf(stdout, "Fork bork\n");
+    _exit(EXIT_FAILURE);
+  }
+  else if (pid == 0) { // child
+    execv("changeParam.py", args);
+    _exit(EXIT_FAILURE);
+  }
+  else { // parent
+    waitpid(pid, &status, 0);
+  }
+
+
+
+  // construct arguments
+  for (int ii = 0; ii < 10; ii++) {
+    delete [] args[ii];
+    args[ii] = new char [1000];
+  }
+  // change parameter
+  strncpy(args[0], changeParam.c_str(), changeParam.length() + 1);
+  strncpy(args[1], "-f", strlen("-f") + 1);
+  strncpy(args[2], jobDirParamFile.c_str(), jobDirParamFile.length() + 1);
+  strncpy(args[3], "gamma2", strlen(jobDir) + 1);
+  strncpy(args[4], g2Str, strlen(g2Str) + 1);
+  args[5] = NULL;
+
+  fprintf(stdout, "COMMAND:");
+  for (int ii = 0; ii < 10; ii++) fprintf(stdout, " %s", args[ii]);
+  fprintf(stdout, "\n");
+
+  if ((pid = fork()) < 0) { // fork fails
+    fprintf(stdout, "Fork bork\n");
+    _exit(EXIT_FAILURE);
+  }
+  else if (pid == 0) { // child
+    execv("changeParam.py", args);
+    _exit(EXIT_FAILURE);
+  }
+  else { // parent
+    waitpid(pid, &status, 0);
+  }
+
+
+
+  // construct arguments
+  for (int ii = 0; ii < 10; ii++) {
+    delete [] args[ii];
+    args[ii] = new char [1000];
+  }
+  // change parameter
+  strncpy(args[0], changeParam.c_str(), changeParam.length() + 1);
+  strncpy(args[1], "-f", strlen("-f") + 1);
+  strncpy(args[2], jobDirParamFile.c_str(), jobDirParamFile.length() + 1);
+  strncpy(args[3], "gamma1_c", strlen(jobDir) + 1);
+  strncpy(args[4], g1_cStr, strlen(g1_cStr) + 1);
+  args[5] = NULL;
+
+  fprintf(stdout, "COMMAND:");
+  for (int ii = 0; ii < 10; ii++) fprintf(stdout, " %s", args[ii]);
+  fprintf(stdout, "\n");
+
+  if ((pid = fork()) < 0) { // fork fails
+    fprintf(stdout, "Fork bork\n");
+    _exit(EXIT_FAILURE);
+  }
+  else if (pid == 0) { // child
+    execv("changeParam.py", args);
+    _exit(EXIT_FAILURE);
+  }
+  else { // parent
+    waitpid(pid, &status, 0);
+  }
+
+
 
   // ---- run code ---- //
   //
+
+  // construct arguments
+  for (int ii = 0; ii < 10; ii++) {
+    delete [] args[ii];
+    args[ii] = new char [1000];
+  }
+  strncpy(args[0], dynamix.c_str(), dynamix.length() + 1);
+  strncpy(args[1], "-i", strlen("-i") + 1);
+  strncpy(args[2], jobInsDir.c_str(), jobInsDir.length() + 1);
+  strncpy(args[3], "-o", strlen("-o") + 1);
+  strncpy(args[4], jobOutsDir.c_str(), jobOutsDir.length() + 1);
+  args[5] = NULL;
+
+  fprintf(stdout, "COMMAND:");
+  for (int ii = 0; ii < 10; ii++) fprintf(stdout, " %s", args[ii]);
+  fprintf(stdout, "\n");
+
   // ---- check for success ---- //
   //
   // ---- read in outputs ---- //
@@ -244,6 +343,11 @@ float dynamixObjective(GAGenome &c) {
   // ---- calculate objective ---- //
   //
   // ---- remove job directory ---- //
+  
+  // clean up
+  for (int ii = 0; ii < 5; ii++) {
+    delete [] args[ii];
+  }
 
   return output;
 }
