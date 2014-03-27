@@ -7,6 +7,8 @@
 #include <sys/wait.h>
 #include <string>
 
+#include "dynamix.hpp"
+
 // This are the declaration of the objective functions which are defined later.
 float objective(GAGenome &);
 float dynamixObjective(GAGenome &);
@@ -51,7 +53,7 @@ int main(int argc, char **argv)
   // Create the template genome using the phenotype map we just made.
   ///GABin2DecGenome genome(map, objective);
   //GA1DArrayGenome<double> genome(2, objective);
-  GA1DArrayGenome<double> genome(2, dynamixObjective);
+  GA1DArrayGenome<double> genome(3, dynamixObjective);
   // define own initializer, can do the same for mutator and comparator
   genome.initializer(::Initializer);
 
@@ -336,6 +338,23 @@ float dynamixObjective(GAGenome &c) {
   for (int ii = 0; ii < 10; ii++) fprintf(stdout, " %s", args[ii]);
   fprintf(stdout, "\n");
 
+  int flag;
+  flag = dynamixMain(5, args);
+
+  /*
+  if ((pid = fork()) < 0) { // fork fails
+    fprintf(stdout, "Fork bork\n");
+    _exit(EXIT_FAILURE);
+  }
+  else if (pid == 0) { // child
+    execv("dynamix", args);
+    _exit(EXIT_FAILURE);
+  }
+  else { // parent
+    waitpid(pid, &status, 0);
+  }
+  */
+
   // ---- check for success ---- //
   //
   // ---- read in outputs ---- //
@@ -343,9 +362,9 @@ float dynamixObjective(GAGenome &c) {
   // ---- calculate objective ---- //
   //
   // ---- remove job directory ---- //
-  
+
   // clean up
-  for (int ii = 0; ii < 5; ii++) {
+  for (int ii = 0; ii < 10; ii++) {
     delete [] args[ii];
   }
 
@@ -358,6 +377,7 @@ void Initializer(GAGenome &g) {
   // there are two genes
   genome.gene(0, GARandomFloat(0.0,5*M_PI));
   genome.gene(1, GARandomFloat(0.0,5*M_PI));
+  genome.gene(2, GARandomFloat(0.0,5*M_PI));
 
   return;
 }
